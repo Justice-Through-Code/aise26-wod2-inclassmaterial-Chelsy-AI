@@ -167,3 +167,67 @@ git push --force-with-lease
 - **Over 24 hours:** High risk, assume compromise
 
 The skills you practice here directly protect production systems and prevent security incidents that can cost companies millions of dollars.
+
+
+
+
+
+---
+
+## 🚨 Emergency Response
+
+### Phase 1: Immediate Damage Control (First 3 minutes)
+
+**Correct first step:**
+✔ **C) Rotate/revoke the compromised credentials immediately**
+
+**Why?**
+Even if you clean Git history or hide the repo, the keys have already been exposed publicly for 2 hours. Attackers could have scraped GitHub in that time. Rotating (revoking and re-issuing new keys) ensures the leaked ones cannot be abused any further. All other steps are secondary.
+
+---
+
+### Phase 2: Git History Cleanup (Next 4 minutes)
+
+**Situation:** The secrets were introduced in commit `i7j8k9l` (3 commits ago).
+
+**Recovery choice:**
+I would choose **Option A: Safe Revert** if I’m not 100% certain that no one else has pulled the repo. A revert ensures the commit history remains consistent across all clones, avoiding messy conflicts with teammates.
+
+* If it’s a solo repo, **Option B: History Rewrite** (`git rebase -i`) is cleaner because it removes the evidence entirely from Git history.
+* In a team/public repo, safer to **revert first**, then coordinate with the team before rewriting history (if allowed).
+
+---
+
+### Phase 3: Prevention Implementation (Last 3 minutes)
+
+**1. Update `.gitignore`:**
+Add patterns for `.env`, keys, secrets directories, and credential files to prevent accidental commits.
+
+**2. Add a pre-commit hook:**
+Scan staged files for common secret patterns (e.g., `api_key=`, `AWS_SECRET`, etc.) and block the commit.
+
+**3. Incident Report (sample):**
+
+> **Incident Summary:** API keys for production were accidentally committed to a public repo. Exposure lasted \~2 hours.
+> **Impact:** Keys were potentially accessible to the public; production system was at risk of misuse.
+> **Actions Taken:** Compromised credentials rotated immediately, Git history cleaned via revert, repo scanned for residual secrets.
+> **Prevention:** `.gitignore` updated, pre-commit hooks added, team trained on secret management best practices.
+
+---
+
+## Team Discussion Prep
+
+**Crisis Response Questions:**
+
+1. *Speed vs Safety:* Revert if collaborating, rebase if solo and confirmed no one pulled.
+2. *Communication:* Notify security team, engineering manager, and ops/DevOps immediately.
+3. *Prevention:* Enable GitHub/GitLab secret scanning, enforce environment variables, use secret managers (Vault, AWS Secrets Manager).
+
+**Git Command Refresher:**
+
+* `git revert <commit>` = safe, creates a new commit.
+* `git reset` = rewinds commits locally (soft/hard).
+* `git rebase -i` = rewrite history.
+* `git push --force-with-lease` = safe force push after coordination.
+
+---

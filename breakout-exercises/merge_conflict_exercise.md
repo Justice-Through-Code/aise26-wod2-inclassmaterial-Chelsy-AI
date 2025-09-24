@@ -179,3 +179,82 @@ This mirrors actual development scenarios:
 - **Testing** your merge prevents broken deployments
 
 The skills you practice here prevent the "it worked on my machine" problems that break production systems.
+
+
+
+
+
+
+
+---
+
+## 📝 Merge Conflict Exercise – Suggested Walkthrough
+
+### Step 1: Analyze Both Branches
+
+* **Branch A (Authentication):** Strengthens security: input validation, bcrypt password hashing, JWT tokens, and error handling.
+* **Branch B (Database):** Adds persistence layer: SQLAlchemy ORM, user model, session handling, and an extra `GET /users` endpoint.
+
+✅ Together they form a secure, persistent authentication system.
+
+---
+
+### Step 2: Plan Integration Strategy
+
+* Start from Branch B (since it has database foundation).
+* Merge in Branch A’s **validation, hashing, and JWT login logic**.
+* Update `create_user` in Branch B to:
+
+  * Perform **input validation** (Branch A).
+  * Hash the password before saving (Branch A).
+  * Save hashed password into DB (Branch B).
+* Ensure `login` endpoint checks database credentials (currently Branch A just trusts input).
+* Keep Branch B’s `get_users` intact.
+
+---
+
+### Step 3: Outline Merge Approach
+
+1. **Create a feature branch for the merge** (avoid directly merging into `main`).
+
+   ```bash
+   git checkout -b merge/auth-db
+   ```
+2. **Merge Branch B into base** (to establish DB schema).
+3. **Merge Branch A into the new branch**, expect conflicts around `create_user`.
+4. **Resolve conflicts:**
+
+   * Keep Branch A’s validation and bcrypt hashing.
+   * Keep Branch B’s DB persistence, modify it to store `password_hash`.
+5. **Refactor login** to pull user from DB and validate bcrypt hash.
+6. **Run tests/checkpoints:**
+
+   * `POST /users` creates validated + hashed + persisted users.
+   * `GET /users` lists users (without exposing passwords).
+   * `POST /login` issues JWT after password check.
+7. **Commit the merge resolution** and run integration tests.
+
+---
+
+### Step 4: What to Test After Merge
+
+* **User creation flow:** Invalid username/password blocked; valid user stored with bcrypt hash.
+* **Database integrity:** Password column stores hashes, not plaintext.
+* **Authentication flow:** Login verifies against bcrypt hash from DB and returns JWT.
+* **Endpoints health:** `/users [POST]`, `/users [GET]`, `/login` all work without errors.
+* **Security regression:** No plaintext passwords in logs, no missing validation.
+
+---
+
+## Discussion Questions (for team sharing)
+
+1. **Strategy:** Combine DB persistence with security features. Don’t drop one side.
+2. **Conflicts:** Mainly in `create_user` function, imports, and overlapping route definitions.
+3. **Testing:** Cover validation, persistence, login, token generation.
+4. **Smart Merge vs “Pick One”:** Intelligent merging = weaving both contributions. Picking one side would either lose persistence or security.
+
+---
+
+✅ **Real-World Takeaway:** An intelligent merge means preserving the **best of both branches** (security + persistence), not just resolving syntax conflicts. Testing ensures the merged code is reliable in production.
+
+---
